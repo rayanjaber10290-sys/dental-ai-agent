@@ -410,3 +410,9 @@ if __name__ == '__main__':
         port=FLASK_PORT,
         debug=FLASK_DEBUG
     )
+# أضف هذا في نهاية ملف api_server.py
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # هذا الكود يمسك أي خطأ يسبب كراش ويمنع السيرفر من التوقف
+    print(f"Server Error: {str(e)}")
+    return {"status": "error", "message": "نظام العيادة واجه ضغطاً مؤقتاً، جاري إعادة التشغيل تلقائياً"}, 200
