@@ -398,21 +398,9 @@ def memory_stats():
 # RUN
 # ================================================
 
-if __name__ == '__main__':
-    print(f"\n{'='*60}")
-    print(f"🚀 Flask API Server")
-    print(f"📍 Host: {FLASK_HOST}")
-    print(f"🔌 Port: {FLASK_PORT}")
-    print(f"{'='*60}\n")
-    
-    app.run(
-        host=FLASK_HOST,
-        port=FLASK_PORT,
-        debug=FLASK_DEBUG
-    )
-# أضف هذا في نهاية ملف api_server.py
-@app.errorhandler(Exception)
-def handle_exception(e):
-    # هذا الكود يمسك أي خطأ يسبب كراش ويمنع السيرفر من التوقف
-    print(f"Server Error: {str(e)}")
-    return {"status": "error", "message": "نظام العيادة واجه ضغطاً مؤقتاً، جاري إعادة التشغيل تلقائياً"}, 200
+if __name__ == "__main__":
+    # Railway يعطينا رقم Port متغير، هذا السطر يقرأه تلقائياً
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+# ملاحظة: تأكد أن كود handle_exception الذي أضفته بالأسفل يبقى كما هو، فهو رائع وحماية ممتازة.
