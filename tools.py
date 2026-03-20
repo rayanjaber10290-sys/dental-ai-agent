@@ -39,29 +39,79 @@ def add_patient_tool(input_json: str) -> str:
             }, ensure_ascii=False)
         
         phone = data['phone'].strip()
+        full_name = data.get('full_name', '').strip()
         
-        # التحقق من صيغة رقم الهاتف
-        if not phone.startswith(PHONE_PREFIX):
+        # ✅ CRITICAL: Validate name
+        if len(full_name) < 2:
             return json.dumps({
                 "success": False,
-                "error": f"رقم الهاتف يجب أن يبدأ بـ {PHONE_PREFIX}",
+                "error": "الاسم يجب أن يكون حرفين على الأقل",
                 "patient_id": None
             }, ensure_ascii=False)
         
-        if len(phone) != PHONE_LENGTH:
+        if any(char.isdigit() for char in full_name):
             return json.dumps({
                 "success": False,
-                "error": f"رقم الهاتف يجب أن يكون {PHONE_LENGTH} رقم",
+                "error": "الاسم لا يجب أن يحتوي على أرقام",
                 "patient_id": None
             }, ensure_ascii=False)
         
-        # فحص التكرار
-        existing_patient = manager.find_patient(phone)
+        # ✅ CRITICAL: Phone normalization and validation
+        # Remove spaces, dashes, parentheses
+        phone_clean = phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        
+        # Handle different formats
+        if phone_clean.startswith('00962'):
+            phone_clean = '+962' + phone_clean[5:]
+        elif phone_clean.startswith('962'):
+            phone_clean = '+962' + phone_clean[3:]
+        elif phone_clean.startswith('07'):
+            phone_clean = '+962' + phone_clean[1:]
+        elif not phone_clean.startswith('+962'):
+            return json.dumps({
+                "success": False,
+                "error": "رقم الهاتف يجب أن يكون أردني (يبدأ بـ 079/078/077)",
+                "patient_id": None
+            }, ensure_ascii=False)
+        
+        # Validate final format
+        if len(phone_clean) != PHONE_LENGTH:
+            return json.dumps({
+                "success": False,
+                "error": f"رقم الهاتف يجب أن يكون {PHONE_LENGTH} رقم (مع +962)",
+                "patient_id": None
+            }, ensure_ascii=False)
+        
+        # Validate it's actually numbers after +962
+        if not phone_clean[4:].isdigit():
+            return json.dumps({
+                "success": False,
+                "error": "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+                "patient_id": None
+            }, ensure_ascii=False)
+        
+        # Validate Jordanian mobile prefixes
+        mobile_prefix = phone_clean[4:6]
+        if mobile_prefix not in ['79', '78', '77']:
+            return json.dumps({
+                "success": False,
+                "error": "رقم الهاتف يجب أن يبدأ بـ 079 أو 078 أو 077",
+                "patient_id": None
+            }, ensure_ascii=False)
+        
+        # ✅ CRITICAL: Check for duplicates BEFORE adding
+        existing_patient = manager.find_patient(phone_clean)
         if existing_patient:
             return json.dumps({
                 "success": False,
-                "error": f"المريض موجود مسبقاً برقم {phone}",
-                "patient_id": existing_patient.get('patient_id')
+                "error": f"⚠️ المريض {existing_patient.get('full_name')} موجود مسبقاً برقم {phone_clean}",
+                "patient_id": existing_patient.get('patient_id'),
+                "existing_patient": {
+                    "patient_id": existing_patient.get('patient_id'),
+                    "full_name": existing_patient.get('full_name'),
+                    "phone": existing_patient.get('phone'),
+                    "city": existing_patient.get('city', 'غير محدد')
+                }
             }, ensure_ascii=False)
         
         # تحضير البيانات
@@ -91,8 +141,8 @@ def add_patient_tool(input_json: str) -> str:
         
         new_row = [
             patient_id,
-            data.get('full_name', '').strip(),
-            phone,
+            full_name,
+            phone_clean,  # Use cleaned phone
             data.get('email', '').strip(),
             city,
             specialty,
@@ -107,12 +157,12 @@ def add_patient_tool(input_json: str) -> str:
         
         return json.dumps({
             "success": True,
-            "message": f"تم إضافة المريض {data['full_name']} بنجاح ✅",
+            "message": f"تم إضافة المريض {full_name} بنجاح ✅",
             "patient_id": patient_id,
             "patient_data": {
                 "patient_id": patient_id,
-                "full_name": data.get('full_name'),
-                "phone": phone,
+                "full_name": full_name,
+                "phone": phone_clean,
                 "email": data.get('email', ''),
                 "city": city,
                 "specialty": specialty,
