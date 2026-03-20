@@ -4,7 +4,7 @@ Flask API Server
 واجهة API للربط مع n8n وWhatsApp
 ================================================
 """
-"startCommand": "gunicorn api_server:app --timeout 120 --workers 2",
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import time
