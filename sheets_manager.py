@@ -23,38 +23,34 @@ class GoogleSheetsManager:
     def __init__(self, credentials_path: str, spreadsheet_id: str):
         """تهيئة الاتصال بـ Google Sheets"""
         try:
-            # Check if credentials are in environment variable (Railway/Render)
             import os
-            credentials_json = os.getenv('GOOGLE_CREDENTIALS')
+            # الكود الجديد للقراءة من متغيرات بيئة Railway
+            creds_json = os.environ.get("GOOGLE_CREDENTIALS")
             
-            if credentials_json:
-                # Parse JSON from environment
-                import json
-                credentials_dict = json.loads(credentials_json)
+            if creds_json:
+                # إذا وجد المتغير في Railway (السيرفر)، يستخدمه مباشرة
+                info = json.loads(creds_json)
                 self.creds = Credentials.from_service_account_info(
-                    credentials_dict,
+                    info, 
                     scopes=SCOPES
                 )
-                print("✅ Loaded credentials from environment variable")
+                print("✅ تم الاتصال بـ Google Sheets بنجاح باستخدام المتغيرات")
             else:
-                # Load from file (local development)
+                # إذا لم يجده (مثل العمل على جهازك الشخصي)، يستخدم الملف المحلي
                 self.creds = Credentials.from_service_account_file(
                     credentials_path,
                     scopes=SCOPES
                 )
-                print("✅ Loaded credentials from file")
-            
+                print("✅ تم تحميل البيانات من ملف credentials.json المحلي")
+                
             self.client = gspread.authorize(self.creds)
             self.spreadsheet = self.client.open_by_key(spreadsheet_id)
-            print("✅ تم الاتصال بـ Google Sheets بنجاح")
+            print("✅ تم فتح ملف Spreadsheet بنجاح")
             
-        except FileNotFoundError:
-            print(f"❌ ملف Credentials غير موجود: {credentials_path}")
-            raise
         except Exception as e:
             print(f"❌ خطأ في الاتصال بـ Google Sheets: {e}")
             raise
-    
+
     def get_sheet(self, sheet_name: str):
         """الحصول على ورقة عمل أو إنشائها"""
         try:
