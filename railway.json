@@ -5,7 +5,6 @@
   },
   "deploy": {
     "startCommand": "gunicorn api_server:app --bind 0.0.0.0:$PORT",
-    "restartPolicyType": "ON_FAILURE",
-    "healthcheckPath": "/"
+    "restartPolicyType": "ON_FAILURE"
   }
 }
